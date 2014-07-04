@@ -1,0 +1,34 @@
+<configuration debug="false">
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d [%thread] %-5level (%file:%line\) - %message%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- ${user.home} is prefixed with \ to avoid value substition performed by maven build -->
+        <file>lib-ogg-vorbis.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>\${user.home}/vorbis/vorbis-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- or whenever the file size reaches 10MB -->
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>50</maxHistory>
+        </rollingPolicy>
+        <!-- <param name="Append" value="false" /> -->
+        <encoder>
+            <pattern>%d [%thread] %-5level (%file:%line\) - %message%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.xiph.vorbis" level="TRACE" />
+    
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>
