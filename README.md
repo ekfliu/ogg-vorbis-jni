@@ -2,7 +2,7 @@ ogg-vorbis-jni
 ==============
 
 this is just a modification of android libogg vorbis from https://github.com/vincentjames501/libvorbis-libogg-android 
-but made to work on windows.
+but made to work on windows on java with JNI.
 
 the only difference it is using the original latest source code downloaded from http://xiph.org/ogg/ which seems to 
 produce smaller dll files on windows.
