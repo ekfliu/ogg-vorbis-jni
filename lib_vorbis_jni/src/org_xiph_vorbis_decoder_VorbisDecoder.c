@@ -14,7 +14,7 @@ to end. */
 #define SUCCESS 0
 
 #define BUFFER_LENGTH 4096
-#define DEBUG 1
+#define DEBUG 0
 
 extern void _VDBG_dump(void);
 
@@ -73,9 +73,9 @@ int readVorbisDataFromVorbisDataFeed(JNIEnv *env, jobject* vorbisDataFeed, jmeth
 }
 
 //Callback on the elapsed seconds
-int elapsedSecondVorbisDataFeed(JNIEnv *env, jobject* vorbisDataFeed, jmethodID* elapsedMethodId, int elapsed_seconds) {
+int elapsedSecondVorbisDataFeed(JNIEnv *env, jobject* vorbisDataFeed, jmethodID* elapsedMethodId, long elapsed_seconds) {
 	//Call the callback method
-	(*env)->CallVoidMethod(env, (*vorbisDataFeed), (*elapsedMethodId), (jint) elapsed_seconds);
+	(*env)->CallVoidMethod(env, (*vorbisDataFeed), (*elapsedMethodId), (jlong) elapsed_seconds);
 
 	return elapsed_seconds;
 }
@@ -261,7 +261,7 @@ JNIEXPORT jint JNICALL Java_org_xiph_vorbis_decoder_VorbisDecoder_startDecoding
         /* we repeat if the bitstream is chained */
         int eos=0;
         int count_samples = 0;
-        int elapsed_seconds = 0;
+        long elapsed_seconds = 0;
         int i;
         
         /* grab some data at the head of the stream. We want the first page

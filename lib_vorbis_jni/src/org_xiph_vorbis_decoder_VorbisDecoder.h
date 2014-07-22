@@ -63,7 +63,7 @@ JNIEXPORT jobject JNICALL Java_org_xiph_vorbis_decoder_VorbisDecoder_decodeFileM
   (JNIEnv *env, jclass cls, jobject vorbisFile);
 
 //callback on elasped time in seconds
-int elapsedSecondVorbisDataFeed(JNIEnv *env, jobject* vorbisDataFeed, jmethodID* elapsedMethodId, int elapsed_seconds);
+int elapsedSecondVorbisDataFeed(JNIEnv *env, jobject* vorbisDataFeed, jmethodID* elapsedMethodId, long elapsed_seconds);
 
 //Stops the vorbis data feed
 void stopDecodeFeed(JNIEnv *env, jobject* vorbisDataFeed, jmethodID* stopMethodId);

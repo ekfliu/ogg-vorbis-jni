@@ -110,9 +110,9 @@
 								<option id="gnu.c.compiler.mingw.exe.release.option.debugging.level.1702455354" name="Debug Level" superClass="gnu.c.compiler.mingw.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.728397432" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib_ogg/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\Java\jdk1.7.0_51\include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\Java\jdk1.7.0_51\include\win32&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib_vorbis/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Java\jdk1.7.0_51\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Java\jdk1.7.0_51\include\win32&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1323224771" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>

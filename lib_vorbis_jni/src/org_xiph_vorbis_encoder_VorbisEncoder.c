@@ -55,7 +55,6 @@ int writeVorbisDataToEncoderDataFeed(JNIEnv *env, jobject* encoderDataFeed, jmet
     }
 
     //Create and copy the contents of what we're writing to the java byte array
-    jbyteArray jByteArray = (*env)->NewByteArray(env, bytes);
     (*env)->SetByteArrayRegion(env, (*jByteArrayWriteBuffer), 0, bytes, (jbyte *)buffer);
 
     //Call the write vorbis data method

@@ -1,8 +1,6 @@
 package org.xiph.vorbis.helper;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,8 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.xiph.vorbis.decoder.DecodeFeed;
 import org.xiph.vorbis.decoder.DecodeStreamInfo;
 import org.xiph.vorbis.decoder.VorbisDecoder;
-
-import com.sun.org.apache.xalan.internal.xsltc.compiler.sym;
 
 public class JavaSoundVorbisPlayer implements Runnable {
 	private static final Logger LOG = LoggerFactory.getLogger(JavaSoundVorbisPlayer.class);
@@ -77,20 +73,11 @@ public class JavaSoundVorbisPlayer implements Runnable {
 	/**
 	 * Custom class to easily decode from a file and write to an {@link AudioTrack}
 	 */
-	private class FileDecodeFeed implements DecodeFeed {
+	private class AudioOutOnlyDecodeFeed implements DecodeFeed {
 		/**
 		 * The audio track to write the raw pcm bytes to
 		 */
 		private SourceDataLine audioTrack;
-
-		/**
-		 * The input stream to decode from
-		 */
-		private InputStream inputStream;
-		/**
-		 * The file to decode ogg/vorbis data from
-		 */
-		private final File fileToDecode;
 
 		private byte[] convertBuffer = new byte[2];
 
@@ -99,40 +86,12 @@ public class JavaSoundVorbisPlayer implements Runnable {
 		 * 
 		 * @param fileToDecode the file to decode
 		 */
-		private FileDecodeFeed(File fileToDecode) throws FileNotFoundException {
-			if (fileToDecode == null) {
-				throw new IllegalArgumentException("File to decode must not be null.");
-			}
-			this.fileToDecode = fileToDecode;
-		}
+		private AudioOutOnlyDecodeFeed() throws FileNotFoundException {}
 
 		@Override
 		public synchronized int readVorbisData(byte[] buffer, int amountToWrite) {
-			LOG.trace("FileDecodeFeed readVorbisData() for {}...", amountToWrite);
-			// If the player is not playing or reading the header, return 0 to
-			// end the native decode method
-			if (currentState.get() == PlayerState.STOPPED) {
-				return 0;
-			}
-
-			// Otherwise read from the file
-			try {
-				int read = inputStream.read(buffer, 0, amountToWrite);
-				while (paused) {
-					LOG.trace("Player is paused");
-					synchronized (JavaSoundVorbisPlayer.this) {
-						try {
-							JavaSoundVorbisPlayer.this.wait();
-						} catch (InterruptedException ie) {}
-					}
-				}
-				return read == - 1 ? 0 : read;
-			} catch (IOException e) {
-				// There was a problem reading from the file
-				LOG.error("Failed to read vorbis data from file.  Aborting.", e);
-				stop();
-				return 0;
-			}
+			waitForResume();
+			return 0;
 		}
 
 		@Override
@@ -142,8 +101,9 @@ public class JavaSoundVorbisPlayer implements Runnable {
 			if (pcmData != null && amountToRead > 0 && audioTrack != null && isPlaying()) {
 				final int byteSize = convertToBuffer(pcmData, amountToRead);
 				audioTrack.write(convertBuffer, 0, byteSize);
+				waitForResume();
 			}
-			
+
 			return currentState.get() != PlayerState.STOPPED;
 		}
 
@@ -176,16 +136,6 @@ public class JavaSoundVorbisPlayer implements Runnable {
 		public void stop() {
 			LOG.trace("FileDecodeFeed stop() called...");
 			if (isPlaying() || isReadingHeader()) {
-				// Closes the file input stream
-				if (inputStream != null) {
-					try {
-						inputStream.close();
-					} catch (IOException e) {
-						LOG.error("Failed to close file input stream", e);
-					}
-					inputStream = null;
-				}
-
 				// Stop the audio track
 				if (audioTrack != null) {
 					audioTrack.stop();
@@ -223,15 +173,7 @@ public class JavaSoundVorbisPlayer implements Runnable {
 		@Override
 		public void startReadingHeader() {
 			LOG.trace("FileDecodeFeed startReadingHeader() called...");
-			if (inputStream == null && isStopped()) {
-				try {
-					inputStream = new BufferedInputStream(new FileInputStream(fileToDecode));
-					currentState.set(PlayerState.READING_HEADER);
-				} catch (FileNotFoundException e) {
-					LOG.error("Failed to find file to decode", e);
-					stop();
-				}
-			}
+			currentState.set(PlayerState.READING_HEADER);
 		}
 
 	}
@@ -289,6 +231,7 @@ public class JavaSoundVorbisPlayer implements Runnable {
 				LOG.trace("Reading...dataToRead:" + amountToWrite + " bufferLength:" + buffer.length);
 				int read = inputStream.read(buffer, 0, amountToWrite);
 				LOG.trace("Read... readCount" + read);
+				waitForResume();
 				return read == - 1 ? 0 : read;
 			} catch (IOException e) {
 				// There was a problem reading from the file
@@ -309,6 +252,7 @@ public class JavaSoundVorbisPlayer implements Runnable {
 					audioTrack.start();
 					currentState.set(PlayerState.PLAYING);
 				}
+				waitForResume();
 			}
 			return currentState.get() != PlayerState.STOPPED;
 		}
@@ -416,7 +360,7 @@ public class JavaSoundVorbisPlayer implements Runnable {
 			throw new IllegalArgumentException("Handler must not be null.");
 		}
 		this.decodeFile = fileToPlay;
-		this.decodeFeed = new FileDecodeFeed(fileToPlay);
+		this.decodeFeed = new AudioOutOnlyDecodeFeed();
 		this.handler = handler;
 	}
 
@@ -495,6 +439,19 @@ public class JavaSoundVorbisPlayer implements Runnable {
 		this.notifyAll();
 	}
 
+	protected void waitForResume() {
+		if (paused && currentState.get() == PlayerState.PLAYING) {
+			LOG.trace("Player is paused");
+			synchronized (this) {
+				try {
+					while (paused && currentState.get() == PlayerState.PLAYING) {
+						JavaSoundVorbisPlayer.this.wait();
+					}
+				} catch (InterruptedException ie) {}
+			}
+		}
+	}
+
 	public synchronized void pause() {
 		if (! paused) {
 			paused = true;
@@ -507,8 +464,8 @@ public class JavaSoundVorbisPlayer implements Runnable {
 			this.notifyAll();
 		}
 	}
-	
-	public synchronized void seekToSeconds(long seekSeconds){
+
+	public synchronized void seekToSeconds(long seekSeconds) {
 		this.seekSeconds = seekSeconds;
 	}
 
